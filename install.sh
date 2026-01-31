@@ -98,7 +98,7 @@ elif [[ "$INSTALL_METHOD" == "git" ]]; then
     fi
   else
     log "Cloning OpenGrasp into $GIT_DIR"
-  run "git clone https://github.com/opengrasp/opengrasp.git \"$GIT_DIR\""
+  run "git clone https://github.com/reghope/opengrasp.git \"$GIT_DIR\""
   fi
   log "Installing deps + building"
   run "cd \"$GIT_DIR\" && bun install"

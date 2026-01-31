@@ -41,7 +41,7 @@ if ($InstallMethod -eq "git") {
     }
   } else {
     Log "Cloning OpenGrasp into $GitDir"
-  Run "git clone https://github.com/opengrasp/opengrasp.git `"$GitDir`""
+  Run "git clone https://github.com/reghope/opengrasp.git `"$GitDir`""
   }
 
   Log "Installing deps + building"
