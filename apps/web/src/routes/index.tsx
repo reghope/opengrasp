@@ -35,6 +35,26 @@ function ChatPage() {
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <Card>
         <CardHeader>
+          <h2 className="font-display text-xl">Install OpenGrasp</h2>
+          <p className="text-sm text-ink-600">Windows quick install commands.</p>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-ink-200 bg-ink-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">PowerShell</p>
+            <code className="mt-2 block rounded-xl bg-white px-3 py-2 text-xs text-ink-800 shadow-sm">
+              iwr -useb https://opengrasp.com/install.ps1 | iex
+            </code>
+          </div>
+          <div className="rounded-2xl border border-ink-200 bg-ink-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Windows CMD</p>
+            <code className="mt-2 block rounded-xl bg-white px-3 py-2 text-xs text-ink-800 shadow-sm">
+              curl -fsSL https://opengrasp.com/install.cmd -o install.cmd && install.cmd && del install.cmd
+            </code>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
           <h2 className="font-display text-xl">Conversation</h2>
           <p className="text-sm text-ink-600">Chat with the local OpenGrasp agent.</p>
         </CardHeader>
