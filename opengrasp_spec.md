@@ -42,7 +42,12 @@ Key points:
 
 ### 4.1 Recommended installer
 ```bash
-curl -fsSL https://opengrasp.ai/install.sh | bash
+curl -fsSL https://opengrasp.com/install.sh | bash
+```
+
+Windows CMD:
+```cmd
+curl -fsSL https://opengrasp.com/install.cmd -o install.cmd && install.cmd && del install.cmd
 ```
 
 ### 4.2 Manual install
@@ -54,7 +59,7 @@ opengrasp onboard --install-daemon
 
 ### 4.3 From source
 ```bash
-git clone https://github.com/<your-org>/opengrasp.git
+git clone https://github.com/opengrasp/opengrasp.git
 cd opengrasp
 bun install
 bun run build
