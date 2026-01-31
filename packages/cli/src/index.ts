@@ -3,6 +3,7 @@ import { Command } from "commander";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import readline from "node:readline/promises";
 import JSON5 from "json5";
 import { GatewayConfigSchema, type GatewayConfig } from "@opengrasp/shared";
 import crypto from "node:crypto";
@@ -40,7 +41,7 @@ program
     const existing = await readConfigIfExists(configPath);
 
     if (!opts.nonInteractive && process.stdout.isTTY) {
-      const result = await runOnboardingTui({
+      const defaultsForOnboard = {
         workspace: existing?.agents?.defaults?.workspace ?? workspace,
         providers: existing?.auth?.providers ?? providers,
         gateway: existing
@@ -51,7 +52,11 @@ program
             }
           : undefined,
         configExists: Boolean(existing)
-      });
+      };
+
+      const result = shouldUsePlainOnboarding()
+        ? await runOnboardingPlain(defaultsForOnboard)
+        : await runOnboardingTui(defaultsForOnboard);
       if (result.action === "keep") {
         console.log("Keeping existing config.");
         return;
@@ -130,6 +135,172 @@ program
     await fs.writeFile(authPath, JSON5.stringify(payload, null, 2), "utf-8");
     console.log(`Saved ${profileId} to ${authPath}`);
   });
+
+type OnboardDefaults = {
+  workspace?: string;
+  providers?: Array<GatewayConfig["auth"]["providers"][number]>;
+  gateway?: {
+    port?: number;
+    bind?: string;
+    authMode?: "token" | "password" | "none";
+  };
+  configExists?: boolean;
+};
+
+function shouldUsePlainOnboarding(): boolean {
+  return (
+    process.platform === "win32" ||
+    process.env.OPENGRASP_PLAIN_ONBOARD === "1" ||
+    !process.stdin.isTTY
+  );
+}
+
+async function runOnboardingPlain(defaults: OnboardDefaults): Promise<{
+  action: "keep" | "write";
+  workspace: string;
+  providers: Array<GatewayConfig["auth"]["providers"][number]>;
+  authEntries: Array<{
+    provider: string;
+    type: "api_key" | "oauth";
+    key?: string;
+    access?: string;
+    refresh?: string;
+    email?: string;
+  }>;
+  gateway: {
+    port: number;
+    bind: string;
+    authMode: "token" | "password" | "none";
+    passwordHash?: string;
+  };
+}> {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const ask = async (question: string, defaultValue?: string): Promise<string> => {
+    const suffix = defaultValue ? ` [${defaultValue}]` : "";
+    const answer = (await rl.question(`${question}${suffix} `)).trim();
+    return answer || defaultValue || "";
+  };
+  const yesNo = async (question: string, defaultYes = true): Promise<boolean> => {
+    const suffix = defaultYes ? "[Y/n]" : "[y/N]";
+    const answer = (await ask(`${question} ${suffix}`)).toLowerCase();
+    if (!answer) return defaultYes;
+    return answer.startsWith("y");
+  };
+
+  console.log("OpenGrasp onboarding.");
+  console.log("Flow: existing config → auth → workspace → gateway → channels → daemon → health → skills.");
+
+  if (defaults.configExists) {
+    const choice = await ask("Existing config found: keep / modify / reset?", "modify");
+    if (choice.trim().toLowerCase().startsWith("keep")) {
+      rl.close();
+      return {
+        action: "keep",
+        workspace: defaults.workspace ?? "~/.opengrasp/workspace",
+        providers: defaults.providers ?? ["anthropic", "openai-codex", "kimi"],
+        authEntries: [],
+        gateway: {
+          port: defaults.gateway?.port ?? 18789,
+          bind: defaults.gateway?.bind ?? "127.0.0.1",
+          authMode: defaults.gateway?.authMode ?? "token"
+        }
+      };
+    }
+  }
+
+  const mode = await ask("Setup mode: quick or advanced?", "quick");
+  const isAdvanced = mode.trim().toLowerCase().startsWith("adv");
+
+  const providerSeed = defaults.providers ?? ["anthropic", "openai-codex", "kimi"];
+  const providers: Array<GatewayConfig["auth"]["providers"][number]> = [];
+  for (const provider of providerSeed) {
+    const enable = await yesNo(`Enable ${provider} auth?`, true);
+    if (enable) providers.push(provider);
+  }
+
+  const extraProvider = await ask("Add another provider? (enter name or leave blank)");
+  if (extraProvider) {
+    const normalized = extraProvider.trim().toLowerCase();
+    const mapped =
+      normalized === "codex" || normalized === "openai" ? "openai-codex" : normalized;
+    if (!providers.includes(mapped as GatewayConfig["auth"]["providers"][number])) {
+      providers.push(mapped as GatewayConfig["auth"]["providers"][number]);
+    }
+  }
+
+  const authEntries: Array<{
+    provider: string;
+    type: "api_key" | "oauth";
+    key?: string;
+    access?: string;
+    refresh?: string;
+    email?: string;
+  }> = [];
+
+  for (const provider of providers) {
+    const authType = (await ask(`Auth type for ${provider} (api/oauth/skip)?`, "api"))
+      .toLowerCase()
+      .trim();
+    if (authType.startsWith("skip")) continue;
+    if (authType.startsWith("oauth")) {
+      const access = await promptHidden("OAuth access token (hidden):");
+      const refresh = await promptHidden("OAuth refresh token (hidden):");
+      const email = await ask("Account email (optional):");
+      authEntries.push({ provider, type: "oauth", access, refresh, email: email || undefined });
+    } else {
+      const key = await promptHidden("API key (hidden):");
+      const email = await ask("Account email (optional):");
+      if (key) authEntries.push({ provider, type: "api_key", key, email: email || undefined });
+    }
+  }
+
+  const workspace = await ask(
+    "Workspace path?",
+    defaults.workspace ?? "~/.opengrasp/workspace"
+  );
+
+  const gatewayPort = isAdvanced
+    ? Number(await ask("Gateway port?", String(defaults.gateway?.port ?? 18789)))
+    : defaults.gateway?.port ?? 18789;
+  const gatewayBind = isAdvanced
+    ? await ask("Gateway bind?", defaults.gateway?.bind ?? "127.0.0.1")
+    : defaults.gateway?.bind ?? "127.0.0.1";
+  const gatewayAuthMode = isAdvanced
+    ? ((await ask("Gateway auth mode (token/password/none)?", "token")) as
+        | "token"
+        | "password"
+        | "none")
+    : defaults.gateway?.authMode ?? "token";
+
+  console.log("Channels setup not implemented yet; skipping.");
+  console.log("Daemon install not implemented yet; skipping.");
+  console.log("Health check not implemented yet; skipping.");
+  console.log("Skills install not implemented yet; skipping.");
+
+  console.log("Summary:");
+  console.log(`Workspace: ${workspace}`);
+  console.log(`Providers: ${providers.join(", ") || "none"}`);
+  console.log(`Auth entries: ${authEntries.length}`);
+  console.log(`Gateway: ${gatewayBind}:${gatewayPort} (${gatewayAuthMode})`);
+
+  const proceed = await yesNo("Continue and write config?", true);
+  rl.close();
+  if (!proceed) {
+    process.exit(1);
+  }
+
+  return {
+    action: "write",
+    workspace,
+    providers,
+    authEntries,
+    gateway: {
+      port: gatewayPort,
+      bind: gatewayBind,
+      authMode: gatewayAuthMode
+    }
+  };
+}
 
 program
   .command("gateway")
