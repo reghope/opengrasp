@@ -10,7 +10,7 @@ param(
 function Log($msg) { Write-Host "[opengrasp] $msg" }
 function Run($cmd) {
   if ($DryRun) { Log "DRY_RUN: $cmd"; return $true }
-  iex $cmd
+  iex $cmd | Out-Null
   if ($LASTEXITCODE -ne 0) {
     Log "Command failed (exit $LASTEXITCODE): $cmd"
     return $false
@@ -58,7 +58,12 @@ if ($InstallMethod -eq "git") {
   $wrapper = "@echo off`n`"%USERPROFILE%\\.bun\\bin\\bun.exe`" `"$GitDir\\packages\\cli\\dist\\index.js`" %*"
   $wrapperPath = Join-Path $binDir "opengrasp.cmd"
   if (-not $DryRun) { $wrapper | Out-File -FilePath $wrapperPath -Encoding ascii }
-  Log "Add $binDir to PATH if needed."
+  $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+  if (-not ($userPath -split ";" | Where-Object { $_ -ieq $binDir })) {
+    [Environment]::SetEnvironmentVariable("Path", "$userPath;$binDir", "User")
+  }
+  $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+  Log "Ensured $binDir is on PATH (restart terminal if command not found)."
 } else {
   Log "Installing OpenGrasp globally via bun..."
   if (-not (Run "bun add -g opengrasp@$Tag")) { exit 1 }
@@ -66,7 +71,11 @@ if ($InstallMethod -eq "git") {
 
 if (-not $NoOnboard) {
   Log "Running onboarding..."
-  if (-not (Run "opengrasp onboard --install-daemon")) { exit 1 }
+  $opengraspCmd = "opengrasp"
+  if (Test-Path "$env:USERPROFILE\.opengrasp\bin\opengrasp.cmd") {
+    $opengraspCmd = "`"$env:USERPROFILE\.opengrasp\bin\opengrasp.cmd`""
+  }
+  if (-not (Run "$opengraspCmd onboard --install-daemon")) { exit 1 }
 } else {
   Log "Skipping onboarding (--no-onboard)."
 }
