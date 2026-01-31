@@ -38,7 +38,7 @@ Key points:
 - Agents are isolated by workspace/session.
 - Tools include filesystem, shell, browser, and dev‑server bridge.
 
-## 4) Installation
+## 4) Installation (Bun)
 
 ### 4.1 Recommended installer
 ```bash
@@ -47,9 +47,7 @@ curl -fsSL https://opengrasp.ai/install.sh | bash
 
 ### 4.2 Manual install
 ```bash
-npm install -g opengrasp@latest
-# or
-pnpm add -g opengrasp@latest
+bun add -g opengrasp@latest
 
 opengrasp onboard --install-daemon
 ```
@@ -58,9 +56,8 @@ opengrasp onboard --install-daemon
 ```bash
 git clone https://github.com/<your-org>/opengrasp.git
 cd opengrasp
-pnpm install
-pnpm ui:build
-pnpm build
+bun install
+bun run build
 opengrasp onboard --install-daemon
 ```
 

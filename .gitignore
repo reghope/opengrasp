@@ -1,0 +1,8 @@
+node_modules
+bun.lockb
+.DS_Store
+dist
+.env
+.cache
+apps/web/dist
+apps/web/.tanstack

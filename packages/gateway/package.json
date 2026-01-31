@@ -1,0 +1,23 @@
+{
+  "name": "@opengrasp/gateway",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "echo 'no lint'",
+    "format": "echo 'no format'"
+  },
+  "dependencies": {
+    "@opengrasp/memory": "workspace:*",
+    "@opengrasp/shared": "workspace:*",
+    "cookie": "^1.0.2",
+    "cookie-signature": "^1.2.2",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "json5": "^2.2.3",
+    "ws": "^8.19.0"
+  }
+}

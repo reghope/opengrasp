@@ -1,0 +1,18 @@
+{
+  "name": "@opengrasp/tui",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "echo 'no lint'",
+    "format": "echo 'no format'"
+  },
+  "dependencies": {
+    "@opengrasp/shared": "workspace:*",
+    "blessed": "^0.1.81",
+    "ws": "^8.19.0"
+  }
+}

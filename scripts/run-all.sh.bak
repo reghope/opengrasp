@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cmd="${1:-}"
+shift || true
+
+if [[ -z "$cmd" ]]; then
+  echo "usage: run-all.sh <script> [args...]" >&2
+  exit 1
+fi
+
+for dir in packages/* apps/*; do
+  if [[ -f "$dir/package.json" ]]; then
+    echo "→ $dir ($cmd)"
+    (cd "$dir" && bun run "$cmd" "$@")
+  fi
+done
