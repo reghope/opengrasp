@@ -37,7 +37,13 @@ USAGE
 }
 
 log() { echo "[opengrasp] $*"; }
-run() { if [[ "$DRY_RUN" == "1" ]]; then log "DRY_RUN: $*"; else eval "$*"; fi }
+run() {
+  if [[ "$DRY_RUN" == "1" ]]; then
+    log "DRY_RUN: $*"
+    return 0
+  fi
+  eval "$*"
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

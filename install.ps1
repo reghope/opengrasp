@@ -9,8 +9,13 @@ param(
 
 function Log($msg) { Write-Host "[opengrasp] $msg" }
 function Run($cmd) {
-  if ($DryRun) { Log "DRY_RUN: $cmd"; return }
+  if ($DryRun) { Log "DRY_RUN: $cmd"; return $true }
   iex $cmd
+  if ($LASTEXITCODE -ne 0) {
+    Log "Command failed (exit $LASTEXITCODE): $cmd"
+    return $false
+  }
+  return $true
 }
 
 if (-not $InstallMethod) { $InstallMethod = "bun" }
@@ -41,12 +46,12 @@ if ($InstallMethod -eq "git") {
     }
   } else {
     Log "Cloning OpenGrasp into $GitDir"
-  Run "git clone https://github.com/reghope/opengrasp.git `"$GitDir`""
+    if (-not (Run "git clone https://github.com/reghope/opengrasp.git `"$GitDir`"")) { exit 1 }
   }
 
   Log "Installing deps + building"
-  Run "cd `"$GitDir`"; bun install"
-  Run "cd `"$GitDir`"; bun run build"
+  if (-not (Run "cd `"$GitDir`"; bun install")) { exit 1 }
+  if (-not (Run "cd `"$GitDir`"; bun run build")) { exit 1 }
 
   $binDir = "$env:USERPROFILE\.opengrasp\bin"
   Run "New-Item -Force -ItemType Directory -Path `"$binDir`" | Out-Null"
@@ -56,12 +61,12 @@ if ($InstallMethod -eq "git") {
   Log "Add $binDir to PATH if needed."
 } else {
   Log "Installing OpenGrasp globally via bun..."
-  Run "bun add -g opengrasp@$Tag"
+  if (-not (Run "bun add -g opengrasp@$Tag")) { exit 1 }
 }
 
 if (-not $NoOnboard) {
   Log "Running onboarding..."
-  Run "opengrasp onboard --install-daemon"
+  if (-not (Run "opengrasp onboard --install-daemon")) { exit 1 }
 } else {
   Log "Skipping onboarding (--no-onboard)."
 }
