@@ -108,7 +108,7 @@ elif [[ "$INSTALL_METHOD" == "git" ]]; then
   fi
   log "Installing deps + building"
   run "cd \"$GIT_DIR\" && bun install"
-  run "cd \"$GIT_DIR\" && bun run build"
+  run "cd \"$GIT_DIR\" && bun scripts/run-all.mjs build --root packages"
   # wrapper
   WRAP_DIR="$HOME/.opengrasp/bin"
   run "mkdir -p \"$WRAP_DIR\""

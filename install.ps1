@@ -51,7 +51,7 @@ if ($InstallMethod -eq "git") {
 
   Log "Installing deps + building"
   if (-not (Run "cd `"$GitDir`"; bun install")) { exit 1 }
-  if (-not (Run "cd `"$GitDir`"; bun run build")) { exit 1 }
+  if (-not (Run "cd `"$GitDir`"; bun scripts/run-all.mjs build --root packages")) { exit 1 }
 
   $binDir = "$env:USERPROFILE\.opengrasp\bin"
   Run "New-Item -Force -ItemType Directory -Path `"$binDir`" | Out-Null"
