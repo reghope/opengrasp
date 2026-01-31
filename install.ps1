@@ -18,6 +18,16 @@ function Run($cmd) {
   return $true
 }
 
+function RunCmd($file, $args) {
+  if ($DryRun) { Log "DRY_RUN: $file $args"; return $true }
+  & $file @args | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    Log "Command failed (exit $LASTEXITCODE): $file $args"
+    return $false
+  }
+  return $true
+}
+
 if (-not $InstallMethod) { $InstallMethod = "bun" }
 if (-not $GitDir) { $GitDir = "$env:USERPROFILE\opengrasp" }
 if (-not $Tag) { $Tag = "latest" }
@@ -73,9 +83,9 @@ if (-not $NoOnboard) {
   Log "Running onboarding..."
   $opengraspCmd = "opengrasp"
   if (Test-Path "$env:USERPROFILE\.opengrasp\bin\opengrasp.cmd") {
-    $opengraspCmd = "`"$env:USERPROFILE\.opengrasp\bin\opengrasp.cmd`""
+    $opengraspCmd = "$env:USERPROFILE\.opengrasp\bin\opengrasp.cmd"
   }
-  if (-not (Run "$opengraspCmd onboard --install-daemon")) { exit 1 }
+  if (-not (RunCmd $opengraspCmd @("onboard", "--install-daemon"))) { exit 1 }
 } else {
   Log "Skipping onboarding (--no-onboard)."
 }
